@@ -23,10 +23,6 @@ class FreeplaneSchema(object):
         self.xml_root_element = Element(self.T_MAP, version=self.V_MAP_VERSION)
         self.root_node = self.create_basic_node(self.xml_root_element, self.xml_root_element)
 
-        # self.root_node = SubElement(self.xml_root_element, self.T_NODE)
-        # self.root_node.set(self.A_ID, uuid.uuid4().hex)
-        # self.root_node.set(self.A_LOCALIZED_TEXT, self.V_NEW_MINDMAP)
-
     def write_document(self, filename):
         """
 
@@ -45,7 +41,7 @@ class FreeplaneSchema(object):
 
         is_a_true_freeplane_file = False
 
-        # Checks go here, for now checks are passing
+        # TODO: Make a real check on the freeplane file format
         if True:
             is_a_true_freeplane_file = True
 

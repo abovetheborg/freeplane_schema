@@ -18,7 +18,7 @@ def test_freeplane_schema_attributes_set_single_attribute_on_root(freeplane_docu
 
     freeplane_document.set_attribute_by_id('root', attribute_name, attribute_value)
 
-    # freeplane_document.write_document(filename)
+    freeplane_document.write_document(filename)
 
     result = freeplane_document.get_attribute_by_id('root', attribute_name)
 

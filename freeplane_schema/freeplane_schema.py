@@ -1,7 +1,9 @@
 import uuid
 import time
+import json
+import hashlib
 
-from xml.etree.ElementTree import Element, SubElement, ElementTree, parse, fromstring
+from xml.etree.ElementTree import Element, SubElement, ElementTree, parse, fromstring, tostring
 
 
 class FreeplaneSchema(object):
@@ -22,6 +24,7 @@ class FreeplaneSchema(object):
 
         self.xml_root_element = Element(self.T_MAP, version=self.V_MAP_VERSION)
         self.root_node = self.create_basic_node(self.xml_root_element, self.xml_root_element)
+        # TODO do not automaticall create a node with a gnenerated id upon initiatilzation of this class
 
     def write_document(self, filename):
         """
@@ -134,7 +137,12 @@ class FreeplaneSchema(object):
     def add_node_by_id(self, parent_node, node_id=None):
         self.create_basic_node(self.xml_root_element, parent_node, node_id)
 
-    def get_node_by_id(self, node_id):
+    def get_node_by_id(self, node_id) -> Element:
+        """
+
+        :param node_id: Unique identifier used to find the node.
+        :return: ElementTree.Element object
+        """
         xpathstring = self.create_xpathstring_for_id(node_id)
         xmatch = self.root_node.findall(xpathstring)
 
@@ -164,6 +172,8 @@ class FreeplaneSchema(object):
                 richcontent_node = SubElement(node, self.T_RICHCONTENT)
                 richcontent_node.set(self.A_TYPE, self.V_TYPE_NOTE)
 
+            # TODO Add case where a not already exist
+
             # Raw text is crashing freeplane.  Will try to wrap the note in an HTML document
 
             local_html_doc = Element('html')
@@ -176,7 +186,7 @@ class FreeplaneSchema(object):
             note_text = note_text.replace('>', '&gt;')
 
             data = '<p>%s</p>' % note_text.replace('\n', '<br />')
-            # print(data)
+
             p = fromstring(data)
             body.append(p)
 
@@ -386,5 +396,52 @@ class FreeplaneSchema(object):
 
         return new_node
 
-    def current_milli_time(self):
+    @staticmethod
+    def current_milli_time():
         return int(round(time.time() * 1000))
+
+    @staticmethod
+    def get_node_children(root_node):
+        return tuple(root_node.iter())
+
+    def create_stable_hashable_node_representation(self, my_node: Element, include_note=False) -> str:
+        d = my_node.attrib
+        if include_note:
+            if self.node_contains_note(my_node):
+                d['zzNote'] = self.get_note_content_string(my_node)
+
+        return json.dumps(d, sort_keys=True, ensure_ascii=True)
+
+    @staticmethod
+    def create_hash_from_representation(rep: str) -> str:
+        m = hashlib.sha1()
+        m.update(rep.encode())
+        return m.hexdigest()
+
+    def node_contains_note(self, my_node: Element) -> bool:
+        return my_node.find(self.T_RICHCONTENT) is not None
+
+    def get_note_content_string(self, my_node) -> str:
+        return self.get_note_content_bytes(my_node).decode()
+
+    def get_note_content_bytes(self, my_node) -> bytes:
+        if self.node_contains_note(my_node):
+            note = my_node.find(self.T_RICHCONTENT)
+            return tostring(note)
+        else:
+            # TODO put an exception here
+            return None
+
+    def compute_node_hash(self, seed_node, include_note=True):
+        all_hashes = dict()
+        id_set = set()
+        children_node = self.get_node_children(seed_node)
+        for elem in children_node:
+            if elem.tag == self.T_NODE:
+                rep = self.create_stable_hashable_node_representation(elem, include_note=include_note)
+                hashed_rep = self.create_hash_from_representation(rep)
+
+                all_hashes[elem.attrib[self.A_ID]] = (elem, hashed_rep)
+                id_set = set(all_hashes.keys())
+
+        return all_hashes, id_set

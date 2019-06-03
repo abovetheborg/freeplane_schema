@@ -25,6 +25,8 @@ class FreeplaneSchema(object):
 
         if mapstyle_file is None:
             self.mapstyle_file = os.path.join("resources", "mapstyles.xml")
+        else
+            self.mapstyle_file = mapstyle_file
 
         self.xml_root_element = Element(self.T_MAP, version=self.V_MAP_VERSION)
         self.root_node = self.create_basic_node(self.xml_root_element, self.xml_root_element)

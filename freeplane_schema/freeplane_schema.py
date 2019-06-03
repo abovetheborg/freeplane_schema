@@ -24,6 +24,7 @@ class FreeplaneSchema(object):
         """
 
         if mapstyle_file is None:
+            # TODO: Correct this default location which seems to not be working when used as a module
             self.mapstyle_file = os.path.join("resources", "mapstyles.xml")
         else:
             self.mapstyle_file = mapstyle_file

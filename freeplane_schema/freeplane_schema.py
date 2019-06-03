@@ -332,6 +332,11 @@ class FreeplaneSchema(object):
         WIll be rased if inconsistent parameter are passed
         """
 
+    class FreeplaneExpectedParentNode(FreeplaneError):
+        """
+        Will be raised if we try to create a node without specifying the parent
+        """
+
     # Tag Constants
     T_MAP = "map"
     T_NODE = "node"
@@ -381,6 +386,9 @@ class FreeplaneSchema(object):
         return xpathstring
 
     def create_basic_node(self, root_node, parent_node, node_id=None, localized_text=None):
+        if parent_node is None:
+            raise self.FreeplaneExpectedParentNode
+
         new_node = SubElement(parent_node, self.T_NODE)
         if node_id is None:
             new_node.set(self.A_ID, uuid.uuid4().hex)

@@ -26,13 +26,19 @@ class FreeplaneSchema(object):
         self.root_node = self.create_basic_node(self.xml_root_element, self.xml_root_element)
         # TODO do not automaticall create a node with a gnenerated id upon initiatilzation of this class
 
-    def write_document(self, filename):
+    def write_document(self, filename, pretty_print_it = False):
         """
 
         :param filename:
         :return:
         """
-        ElementTree(self.xml_root_element).write(file_or_filename=filename)
+
+        temp_xml_root = self.xml_root_element
+
+        if pretty_print_it:
+            self.indent(temp_xml_root, 0)
+
+        ElementTree(temp_xml_root).write(file_or_filename=filename)
 
     def read_document(self, filename):
         """
@@ -445,3 +451,19 @@ class FreeplaneSchema(object):
                 id_set = set(all_hashes.keys())
 
         return all_hashes, id_set
+
+
+    def indent(self, elem, level=0):
+        i = "\n" + level * "  "
+        if len(elem):
+            if not elem.text or not elem.text.strip():
+                elem.text = i + "  "
+            if not elem.tail or not elem.tail.strip():
+                elem.tail = i
+            for elem in elem:
+                self.indent(elem, level + 1)
+            if not elem.tail or not elem.tail.strip():
+                elem.tail = i
+        else:
+            if level and (not elem.tail or not elem.tail.strip()):
+                elem.tail = i

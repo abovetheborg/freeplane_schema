@@ -8,7 +8,7 @@ with open('LICENSE') as f:
 
 setup(
     name='freeplane_schema',
-    version='0.1.0',
+    version='0.1.1',
     description='Python representation of the Freeplane XML schema',
     long_description=readme,
     author='Michel JACQUES',

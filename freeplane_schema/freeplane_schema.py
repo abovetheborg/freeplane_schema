@@ -1,3 +1,4 @@
+import os
 import uuid
 import time
 import json
@@ -17,16 +18,19 @@ class FreeplaneSchema(object):
         TEXT: User defined text string
     """
 
-    def __init__(self):
+    def __init__(self, mapstyle_file=None):
         """
         Upon init, will create a new document
         """
+
+        if mapstyle_file is None:
+            self.mapstyle_file = os.path.join("resources", "mapstyle.xml")
 
         self.xml_root_element = Element(self.T_MAP, version=self.V_MAP_VERSION)
         self.root_node = self.create_basic_node(self.xml_root_element, self.xml_root_element)
         # TODO do not automaticall create a node with a gnenerated id upon initiatilzation of this class
 
-    def write_document(self, filename, pretty_print_it = False):
+    def write_document(self, filename, pretty_print_it = False, add_map_styles=False):
         """
 
         :param filename:
@@ -34,6 +38,10 @@ class FreeplaneSchema(object):
         """
 
         temp_xml_root = self.xml_root_element
+
+        if add_map_styles:
+            hook_node = parse(self.mapstyle_file).getroot()
+            self.root_node.append(hook_node)
 
         if pretty_print_it:
             self.indent(temp_xml_root, 0)

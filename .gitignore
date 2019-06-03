@@ -107,3 +107,4 @@ venv.bak/
 .idea/
 
 tests/output/**
+tests/single_line_document.mm

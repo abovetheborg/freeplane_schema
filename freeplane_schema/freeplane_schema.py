@@ -1,4 +1,5 @@
 import os
+import logging
 import uuid
 import time
 import json
@@ -18,10 +19,12 @@ class FreeplaneSchema(object):
         TEXT: User defined text string
     """
 
-    def __init__(self, mapstyle_file=None):
+    def __init__(self, mapstyle_file=None, logger=None):
         """
         Upon init, will create a new document
         """
+
+        self._logger = (logger or self._build_logger())
 
         if mapstyle_file is None:
             # TODO: Correct this default location which seems to not be working when used as a module
@@ -32,6 +35,15 @@ class FreeplaneSchema(object):
         self.xml_root_element = Element(self.T_MAP, version=self.V_MAP_VERSION)
         self.root_node = self.create_basic_node(self.xml_root_element, self.xml_root_element)
         # TODO do not automaticall create a node with a gnenerated id upon initiatilzation of this class
+
+    @property
+    def logger(self):
+        return self._logger
+
+    def _build_logger(self):
+        logger= logging.getLogger(self.__module__)
+        logger.addHandler(logging.NullHandler())
+        return logger
 
     def write_document(self, filename, pretty_print_it = False, add_map_styles=False):
         """

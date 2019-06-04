@@ -25,12 +25,16 @@ class FreeplaneSchema(object):
         """
 
         self._logger = (inherited_logger or self._build_logger())
+        self.logger.debug('INIT: Current working directory is: {0}'.format(os.getcwd()))
+        self.logger.debug('INIT: Class definition file: {0}'.format(os.path.dirname(os.path.realpath(__file__))))
 
         if mapstyle_file is None:
             # TODO: Correct this default location which seems to not be working when used as a module
             self.mapstyle_file = os.path.join("resources", "mapstyles.xml")
         else:
             self.mapstyle_file = mapstyle_file
+
+        self.logger.debug('INIT: Mapstyle location: {0}'.format(os.path.join(os.getcwd(), self.mapstyle_file)))
 
         self.xml_root_element = Element(self.T_MAP, version=self.V_MAP_VERSION)
         self.root_node = self.create_basic_node(self.xml_root_element, self.xml_root_element)

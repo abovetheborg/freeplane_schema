@@ -19,12 +19,12 @@ class FreeplaneSchema(object):
         TEXT: User defined text string
     """
 
-    def __init__(self, mapstyle_file=None, logger=None):
+    def __init__(self, mapstyle_file=None, inherited_logger=None):
         """
         Upon init, will create a new document
         """
 
-        self._logger = (logger or self._build_logger())
+        self._logger = (inherited_logger or self._build_logger())
 
         if mapstyle_file is None:
             # TODO: Correct this default location which seems to not be working when used as a module
@@ -41,7 +41,7 @@ class FreeplaneSchema(object):
         return self._logger
 
     def _build_logger(self):
-        logger= logging.getLogger(self.__module__)
+        logger = logging.getLogger(self.__module__)
         logger.addHandler(logging.NullHandler())
         return logger
 

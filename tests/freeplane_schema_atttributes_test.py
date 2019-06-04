@@ -1,17 +1,34 @@
 import pytest
 import os
+import logging
+import sys
 
-from .context import FreeplaneSchema
+from .context import  FreeplaneSchema
 
 OUTPUT_PREFIX = os.path.join("output", "text_output_")
 
 
 @pytest.fixture
-def freeplane_document():
-    return FreeplaneSchema()
+def logger_during_tests():
+    formatter = logging.Formatter(fmt='%(asctime)s %(levelname)-8s %(message)s',
+                                  datefmt='%Y-%m-%d %H:%M:%S')
+    handler = logging.FileHandler('log.txt', mode='w')
+    handler.setFormatter(formatter)
+    screen_handler = logging.StreamHandler(stream=sys.stdout)
+    screen_handler.setFormatter(formatter)
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.DEBUG)
+    logger.addHandler(handler)
+    logger.addHandler(screen_handler)
+    return logger
 
 
-def test_freeplane_schema_attributes_set_single_attribute_on_root(freeplane_document):
+@pytest.fixture
+def freeplane_document(logger_during_tests):
+    return FreeplaneSchema(inherited_logger=logger_during_tests)
+
+
+def test_freeplane_schema_attributes_set_single_attribute_on_root(freeplane_document, logger_during_tests):
     filename = OUTPUT_PREFIX + "set_single_attribute_on_root.mm"
     attribute_name = "Name of attribute"
     attribute_value = "Value of attribute"

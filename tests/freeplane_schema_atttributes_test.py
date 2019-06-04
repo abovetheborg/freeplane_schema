@@ -7,7 +7,7 @@ from .context import  FreeplaneSchema
 
 OUTPUT_PREFIX = os.path.join("output", "text_output_")
 
-
+# TODO: Address the scope of that function so logs don't repeats themselves
 @pytest.fixture
 def logger_during_tests():
     formatter = logging.Formatter(fmt='%(asctime)s %(levelname)-8s %(message)s',

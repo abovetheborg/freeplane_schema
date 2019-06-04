@@ -56,6 +56,9 @@ class FreeplaneSchema(object):
         :return:
         """
 
+        self.logger.debug('write_document:\tfilename: {0}\n'
+                          '\t\t\t\t\t\t\t\t\t\t\t\tpretty_print_it: {1}\n'
+                          '\t\t\t\t\t\t\t\t\t\t\t\tadd_map_style: {2}'.format(filename,pretty_print_it,add_map_styles))
         temp_xml_root = self.xml_root_element
 
         if add_map_styles:

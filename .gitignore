@@ -108,3 +108,5 @@ venv.bak/
 
 tests/output/**
 tests/single_line_document.mm
+
+tests/log.txt

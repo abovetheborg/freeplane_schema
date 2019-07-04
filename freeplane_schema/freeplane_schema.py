@@ -446,8 +446,8 @@ class FreeplaneSchema(object):
         return int(round(time.time() * 1000))
 
     @staticmethod
-    def get_node_children(root_node):
-        return tuple(root_node.iter())
+    def get_node_immediate_children(root_node):
+        return root_node.getchildren()
 
     def create_stable_hashable_node_representation(self, my_node: Element, include_note=False) -> str:
         d = my_node.attrib
@@ -480,7 +480,7 @@ class FreeplaneSchema(object):
     def compute_node_hash(self, seed_node, include_note=True):
         all_hashes = dict()
         id_set = set()
-        children_node = self.get_node_children(seed_node)
+        children_node = self.get_node_immediate_children(seed_node)
         for elem in children_node:
             if elem.tag == self.T_NODE:
                 rep = self.create_stable_hashable_node_representation(elem, include_note=include_note)

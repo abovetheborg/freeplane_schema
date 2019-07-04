@@ -447,7 +447,7 @@ class FreeplaneSchema(object):
 
     @staticmethod
     def get_node_immediate_children(root_node):
-        return root_node.getchildren()
+        return tuple(root_node.getchildren())
 
     def create_stable_hashable_node_representation(self, my_node: Element, include_note=False) -> str:
         d = my_node.attrib

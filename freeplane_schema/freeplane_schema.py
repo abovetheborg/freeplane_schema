@@ -5,7 +5,7 @@ import time
 import json
 import hashlib
 
-from xml.etree.ElementTree import Element, SubElement, ElementTree, parse, fromstring, tostring
+from lxml.etree import Element, SubElement, ElementTree, parse, fromstring, tostring
 
 
 class FreeplaneSchema(object):
@@ -69,8 +69,7 @@ class FreeplaneSchema(object):
 
         if pretty_print_it:
             self.indent(temp_xml_root, 0)
-
-        ElementTree(temp_xml_root).write(file_or_filename=filename)
+        ElementTree(temp_xml_root).write(filename)
 
     def read_document(self, filename):
         """

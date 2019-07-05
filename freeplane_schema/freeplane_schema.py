@@ -313,6 +313,68 @@ class FreeplaneSchema(object):
             else:
                 return self.V_POSITION_DEFAULT
 
+    def compare_against(self, other):
+        if not isinstance(other, self.__class__):
+            raise self.FreeplaneObjectNotFreeplaneDocument
+
+        list1 = [self.get_node_by_id('root')]
+        list2 = [other.get_node_by_id('root')]
+
+        node1 = None
+        node2 = None
+
+        treated_node1 = []
+        modified_node1 = []
+        in_structure1_only = []
+
+        modified_node2 = []
+        in_structure2_only = []
+
+        while len(list1) > 0:
+            node1 = list1.pop()
+            # Append children of node 1 to list1
+            list1 = list1 + self.get_node_immediate_children(node1)
+
+            # Add node1 to treated_node1
+            treated_node1.append(node1.attrib[self.A_ID])
+
+            # Look for node1 in other object
+            node2 = other.get_node_by_id(node1.attrib[self.A_ID])
+
+            if node2 is not None:
+                node_diff_report = self.compare_node(node1, node2)
+
+                if node_diff_report['is_identical']:
+                    modified_node1.append(node1.attrib[self.A_ID])
+            else:
+                in_structure1_only.append(node1.attrib[self.A_ID])
+
+        node1 = None
+        node2 = None
+
+        while len(list1) > 0:
+            node2 = list2.pop()
+            list2 = list2 + other.get_node_immediate_children(node2)
+
+            if node2.attrib[other.A_ID] in treated_node1:
+                continue
+
+            node1 = self.get_node_by_id(node2.attrib[self.A_ID])
+
+            if node1 is not None:
+                node_diff_report = self.compare_node(node2, node1)
+
+                if node_diff_report['is_identical']:
+                    modified_node2.append(node2.attrib[other.A_ID])
+            else:
+                in_structure2_only.append(node2.attrib[other.A_ID])
+
+    def compare_node(self, node1, node2):
+        diff_report = {'is_identical': None, 'check_methods': {}}
+
+        diff_report['is_identical'] = True
+        return diff_report
+
     class FreeplaneError(Exception):
         pass
 
@@ -366,6 +428,11 @@ class FreeplaneSchema(object):
     class FreeplaneExpectedParentNode(FreeplaneError):
         """
         Will be raised if we try to create a node without specifying the parent
+        """
+
+    class FreeplaneObjectNotFreeplaneDocument(FreeplaneError):
+        """
+        Will be raised if we expected a FreeplaneSchema instance and we didn't receive one
         """
 
     # Tag Constants
@@ -447,7 +514,7 @@ class FreeplaneSchema(object):
 
     @staticmethod
     def get_node_immediate_children(root_node):
-        return tuple(root_node.getchildren())
+        return root_node.getchildren()
 
     def create_stable_hashable_node_representation(self, my_node: Element, include_note=False) -> str:
         d = my_node.attrib
@@ -477,19 +544,20 @@ class FreeplaneSchema(object):
             # TODO put an exception here
             return None
 
-    def compute_node_hash(self, seed_node, include_note=True):
-        all_hashes = dict()
-        id_set = set()
-        children_node = self.get_node_immediate_children(seed_node)
-        for elem in children_node:
-            if elem.tag == self.T_NODE:
-                rep = self.create_stable_hashable_node_representation(elem, include_note=include_note)
-                hashed_rep = self.create_hash_from_representation(rep)
+    # def compute_node_hash(self, seed_node, include_note=True):
+    #     all_hashes = dict()
+    #     id_set = set()
+    #     children_node = self.get_node_children(seed_node)
+    #     for elem in children_node:
+    #         if elem.tag == self.T_NODE:
+    #             rep = self.create_stable_hashable_node_representation(elem, include_note=include_note)
+    #             hashed_rep = self.create_hash_from_representation(rep)
+    #
+    #             all_hashes[elem.attrib[self.A_ID]] = (elem, hashed_rep)
+    #             id_set = set(all_hashes.keys())
+    #
+    #     return all_hashes, id_set
 
-                all_hashes[elem.attrib[self.A_ID]] = (elem, hashed_rep)
-                id_set = set(all_hashes.keys())
-
-        return all_hashes, id_set
 
 
     def indent(self, elem, level=0):

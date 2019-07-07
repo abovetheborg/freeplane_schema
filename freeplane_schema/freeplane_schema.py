@@ -314,12 +314,13 @@ class FreeplaneSchema(object):
             else:
                 return self.V_POSITION_DEFAULT
 
-    def compare_against(self, other):
+    def compare_against_reference_document(self, other, test_node_text=False):
         if not isinstance(other, self.__class__):
             raise self.FreeplaneObjectNotFreeplaneDocument
 
         list1 = [self.get_node_by_id('root')]
         list2 = [other.get_node_by_id('root')]
+        list_of_ndr = []
 
         node1 = None
         node2 = None
@@ -335,6 +336,10 @@ class FreeplaneSchema(object):
             node1 = list1.pop()
             # Append children of node 1 to list1
             list1 = list1 + self.get_node_immediate_children(node1)
+            if node1.tag == self.T_NODE:
+                pass
+            else:
+                continue
 
             # Add node1 to treated_node1
             treated_node1.append(node1.attrib[self.A_ID])
@@ -342,19 +347,33 @@ class FreeplaneSchema(object):
             # Look for node1 in other object
             node2 = other.get_node_by_id(node1.attrib[self.A_ID])
 
-            if node2 is not None:
-                node_diff_report = self.compare_node(node1, node2)
-
-                if node_diff_report['is_identical']:
-                    modified_node1.append(node1.attrib[self.A_ID])
-            else:
+            if node2 is None:
+                # Exists in 1 but not in 2 -> implies new node
                 in_structure1_only.append(node1.attrib[self.A_ID])
+                ndr = self.create_node_diff_report_for_new(node1.attrib[self.A_ID])
+            else:
+                # Exists in 1 and 2 -> Can either be a modified or not
+                ndr = self.compare_node(node1, node2, test_node_text=test_node_text)
+
+                if ndr['diff_type'] == self.V_DIFF_MODIFIED:
+                    modified_node1.append(node1.attrib[self.A_ID])
+                elif ndr['diff_type'] == self.V_DIFF_IDENTICAL:
+                    pass
+                elif ndr['diff_type'] == self.V_DIFF_NOT_CHECKED:
+                    # This condition shouldn't be hit once a proper implementation of compare_node is done
+                    pass
+
+                list_of_ndr.append(ndr)
 
         node1 = None
         node2 = None
 
         while len(list1) > 0:
             node2 = list2.pop()
+            if node2.tag == self.T_NODE:
+                pass
+            else:
+                continue
             list2 = list2 + other.get_node_immediate_children(node2)
 
             if node2.attrib[other.A_ID] in treated_node1:
@@ -362,19 +381,74 @@ class FreeplaneSchema(object):
 
             node1 = self.get_node_by_id(node2.attrib[self.A_ID])
 
-            if node1 is not None:
-                node_diff_report = self.compare_node(node2, node1)
-
-                if node_diff_report['is_identical']:
-                    modified_node2.append(node2.attrib[other.A_ID])
-            else:
+            if node1 is None:
+                # exists in 2 but not in 1 -> implies a deleted node
                 in_structure2_only.append(node2.attrib[other.A_ID])
+                ndr = self.create_node_diff_report_for_deleted(node2.attrib[other.A_ID])
+            else:
+                # We shouldn't have a else here. The thing should blow up
+                raise
 
-    def compare_node(self, node1, node2):
-        diff_report = {'is_identical': None, 'check_methods': {}}
+            list_of_ndr.append(ndr)
 
-        diff_report['is_identical'] = True
-        return diff_report
+        pass
+
+    def initialize_diff_report_for_node_id(self, node_id):
+        node_diff_report = {'node_id': node_id,
+                            'diff_type': self.V_DIFF_NOT_CHECKED,
+                            'check_methods': []}
+        return node_diff_report
+
+    def create_node_diff_report_for_new(self, node_id):
+        node_diff_report = self.initialize_diff_report_for_node_id(node_id=node_id)
+        node_diff_report['diff_type'] = self.V_DIFF_NEW
+        return node_diff_report
+
+    def create_node_diff_report_for_deleted(self, node_id):
+        node_diff_report = self.initialize_diff_report_for_node_id(node_id=node_id)
+        node_diff_report['diff_type'] = self.V_DIFF_DELETED
+        return node_diff_report
+
+    def compare_node(self, node1, node2, test_node_text=False):
+        if node1.attrib[self.A_ID] != node2.attrib[self.A_ID]:
+            raise self.FreeplaneCannotCompareNodeWithDifferentID
+
+        node_diff_report = self.initialize_diff_report_for_node_id(node_id=node1.attrib[self.A_ID])
+
+        is_identical = None
+
+        node_diff_report['check_methods'].append({'node_text': test_node_text})
+
+        if test_node_text:
+            # Condition to run test:
+            #   - At least one node has the TEXT attribute.  If one doesn't, they are deemed different
+            if self.A_TEXT in node1.attrib and self.A_TEXT in node2.attrib:
+                if is_identical is None:
+                    is_identical = True
+                is_identical = is_identical & self.diff_node_text(node1, node2)
+                test_excerpt = {'node_text': self.V_DIFF_TEST_EXECUTED}
+            elif not (self.A_TEXT in node1.attrib and self.A_TEXT in node2.attrib):
+                # Test cannot execute
+                test_excerpt = {'node_text': self.V_DIFF_TEST_ATTEMPTED_CONDITIONS_NOT_MET}
+            else:
+                is_identical = False
+                test_excerpt = {'node_text': self.V_DIFF_TEST_EXECUTED}
+        else:
+            test_excerpt = {'node_text': self.V_DIFF_TEST_NOT_ATTEMPTED}
+
+        node_diff_report['check_methods'].append(test_excerpt)
+
+        if is_identical is None:
+            node_diff_report['diff_type'] = self.V_DIFF_NOT_CHECKED
+        elif is_identical:
+            node_diff_report['diff_type'] = self.V_DIFF_IDENTICAL
+        else:
+            node_diff_report['diff_type'] = self.V_DIFF_MODIFIED
+
+        return node_diff_report
+
+    def diff_node_text(self, node1, node2):
+        return node1.attrib[self.A_TEXT] == node2.attrib[self.A_TEXT]
 
     class FreeplaneError(Exception):
         pass
@@ -436,6 +510,12 @@ class FreeplaneSchema(object):
         Will be raised if we expected a FreeplaneSchema instance and we didn't receive one
         """
 
+    class FreeplaneCannotCompareNodeWithDifferentID(FreeplaneError):
+        """
+        Will be raised when a request or node compare is done agains two nodes with different ID.
+        The whole code works on the assumption that ID are unique
+        """
+
     # Tag Constants
     T_MAP = "map"
     T_NODE = "node"
@@ -474,6 +554,16 @@ class FreeplaneSchema(object):
     V_POSITION_RIGHT = 'right'
     V_POSITION_DEFAULT = 'default'
     V_ALLOWED_POSITION = [V_POSITION_LEFT, V_POSITION_RIGHT, V_POSITION_DEFAULT]
+
+    V_DIFF_NOT_CHECKED = 'not_checked'
+    V_DIFF_NEW = 'new'
+    V_DIFF_MODIFIED = 'modified'
+    V_DIFF_DELETED = 'deleted'
+    V_DIFF_IDENTICAL = 'identical'
+
+    V_DIFF_TEST_NOT_ATTEMPTED = 'NOT ATTEMPTED'
+    V_DIFF_TEST_ATTEMPTED_CONDITIONS_NOT_MET = 'ATTEMPTED BUT CONDITIONS NOT MET'
+    V_DIFF_TEST_EXECUTED = 'EXECUTED'
 
     def create_xpathstring_for_id(self, id):
         if id == "root":

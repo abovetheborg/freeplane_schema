@@ -355,11 +355,11 @@ class FreeplaneSchema(object):
                 # Exists in 1 and 2 -> Can either be a modified or not
                 ndr = self.compare_node(node1, node2, test_node_text=test_node_text)
 
-                if ndr['diff_type'] == self.V_DIFF_MODIFIED:
+                if ndr[self.K_DIFF_TYPE] == self.V_DIFF_MODIFIED:
                     modified_node1.append(node1.attrib[self.A_ID])
-                elif ndr['diff_type'] == self.V_DIFF_IDENTICAL:
+                elif ndr[self.K_DIFF_TYPE] == self.V_DIFF_IDENTICAL:
                     pass
-                elif ndr['diff_type'] == self.V_DIFF_NOT_CHECKED:
+                elif ndr[self.K_DIFF_TYPE] == self.V_DIFF_NOT_CHECKED:
                     # This condition shouldn't be hit once a proper implementation of compare_node is done
                     pass
 
@@ -394,30 +394,33 @@ class FreeplaneSchema(object):
         pass
 
     def initialize_diff_report_for_node_id(self, node_id):
-        node_diff_report = {'node_id': node_id,
-                            'diff_type': self.V_DIFF_NOT_CHECKED,
-                            'check_methods': []}
+        node_diff_report = {self.K_NODE_ID: node_id,
+                            self.K_DIFF_TYPE: self.V_DIFF_NOT_CHECKED,
+                            self.K_CHECK_METHODS: []}
         return node_diff_report
 
     def create_node_diff_report_for_new(self, node_id):
         node_diff_report = self.initialize_diff_report_for_node_id(node_id=node_id)
-        node_diff_report['diff_type'] = self.V_DIFF_NEW
+        node_diff_report[self.K_DIFF_TYPE] = self.V_DIFF_NEW
         return node_diff_report
 
     def create_node_diff_report_for_deleted(self, node_id):
         node_diff_report = self.initialize_diff_report_for_node_id(node_id=node_id)
-        node_diff_report['diff_type'] = self.V_DIFF_DELETED
+        node_diff_report[self.K_DIFF_TYPE] = self.V_DIFF_DELETED
         return node_diff_report
 
     def compare_node(self, node1, node2, test_node_text=False):
         if node1.attrib[self.A_ID] != node2.attrib[self.A_ID]:
             raise self.FreeplaneCannotCompareNodeWithDifferentID
 
+        # CONSTANTS
+        TEST_NAME_NODE_TEXT = 'node_text'
+
         node_diff_report = self.initialize_diff_report_for_node_id(node_id=node1.attrib[self.A_ID])
 
         is_identical = None
 
-        node_diff_report['check_methods'].append({'node_text': test_node_text})
+        # node_diff_report[self.K_CHECK_METHODS].append({'node_text': test_node_text})
 
         if test_node_text:
             # Condition to run test:
@@ -426,24 +429,24 @@ class FreeplaneSchema(object):
                 if is_identical is None:
                     is_identical = True
                 is_identical = is_identical & self.diff_node_text(node1, node2)
-                test_excerpt = {'node_text': self.V_DIFF_TEST_EXECUTED}
+                test_excerpt = {TEST_NAME_NODE_TEXT: self.V_DIFF_TEST_EXECUTED}
             elif not (self.A_TEXT in node1.attrib and self.A_TEXT in node2.attrib):
                 # Test cannot execute
-                test_excerpt = {'node_text': self.V_DIFF_TEST_ATTEMPTED_CONDITIONS_NOT_MET}
+                test_excerpt = {TEST_NAME_NODE_TEXT: self.V_DIFF_TEST_ATTEMPTED_CONDITIONS_NOT_MET}
             else:
                 is_identical = False
-                test_excerpt = {'node_text': self.V_DIFF_TEST_EXECUTED}
+                test_excerpt = {TEST_NAME_NODE_TEXT: self.V_DIFF_TEST_EXECUTED}
         else:
-            test_excerpt = {'node_text': self.V_DIFF_TEST_NOT_ATTEMPTED}
+            test_excerpt = {TEST_NAME_NODE_TEXT: self.V_DIFF_TEST_NOT_ATTEMPTED}
 
-        node_diff_report['check_methods'].append(test_excerpt)
+        node_diff_report[self.K_CHECK_METHODS].append(test_excerpt)
 
         if is_identical is None:
-            node_diff_report['diff_type'] = self.V_DIFF_NOT_CHECKED
+            node_diff_report[self.K_DIFF_TYPE] = self.V_DIFF_NOT_CHECKED
         elif is_identical:
-            node_diff_report['diff_type'] = self.V_DIFF_IDENTICAL
+            node_diff_report[self.K_DIFF_TYPE] = self.V_DIFF_IDENTICAL
         else:
-            node_diff_report['diff_type'] = self.V_DIFF_MODIFIED
+            node_diff_report[self.K_DIFF_TYPE] = self.V_DIFF_MODIFIED
 
         return node_diff_report
 
@@ -534,6 +537,11 @@ class FreeplaneSchema(object):
     A_NAME = 'NAME'
     A_VALUE = "VALUE"
     A_POSITION = "POSITION"
+
+    # Import dictionary keys
+    K_NODE_ID = 'node_id'
+    K_DIFF_TYPE = 'diff_type'
+    K_CHECK_METHODS = 'check_methods'
 
     # Value Constant
     V_MAP_VERSION = "freeplane 1.6.0"

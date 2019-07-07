@@ -87,6 +87,7 @@ class FreeplaneSchema(object):
 
         if is_a_true_freeplane_file:
             self.xml_root_element = self.temp_xml_root_element
+            self.root_node = self.xml_root_element.findall(self.T_NODE)[0]
             del self.temp_xml_root_element
 
     def set_node_text_by_id(self, node_id, text):

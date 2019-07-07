@@ -420,8 +420,6 @@ class FreeplaneSchema(object):
 
         is_identical = None
 
-        # node_diff_report[self.K_CHECK_METHODS].append({'node_text': test_node_text})
-
         if test_node_text:
             # Condition to run test:
             #   - At least one node has the TEXT attribute.  If one doesn't, they are deemed different

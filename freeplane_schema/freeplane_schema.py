@@ -333,33 +333,46 @@ class FreeplaneSchema(object):
         in_structure2_only = []
 
         while len(list1) > 0:
+            self.logger.debug('compare_against_reference: --- Start of list1 iteration ---')
+            self.logger.debug('compare_against_reference: length of list1:\t\t\t{0}'.format(len(list1)))
+            self.logger.debug('compare_against_reference: length of list2:\t\t\t{0}'.format(len(list2)))
+
             node1 = list1.pop()
             # Append children of node 1 to list1
             list1 = list1 + self.get_node_immediate_children(node1)
             if node1.tag == self.T_NODE:
+                self.logger.debug('compare_against_reference: Element is a node, proceeding with iteration')
                 pass
             else:
+                self.logger.debug('compare_against_reference: Element is NOT a node... skipping iteration')
                 continue
 
             # Add node1 to treated_node1
             treated_node1.append(node1.attrib[self.A_ID])
+            self.logger.debug('compare_against_reference: length of treated_node1:\t{0}'.format(len(treated_node1)))
 
             # Look for node1 in other object
             node2 = other.get_node_by_id(node1.attrib[self.A_ID])
 
             if node2 is None:
+                self.logger.debug('compare_against_reference: node1 not present in reference document -> new node')
                 # Exists in 1 but not in 2 -> implies new node
                 in_structure1_only.append(node1.attrib[self.A_ID])
                 ndr = self.create_node_diff_report_for_new(node1.attrib[self.A_ID])
             else:
+                self.logger.debug(
+                    'compare_against_reference: node1 present in reference document -> modified/identical')
                 # Exists in 1 and 2 -> Can either be a modified or not
                 ndr = self.compare_node(node1, node2, test_node_text=test_node_text)
 
                 if ndr[self.K_DIFF_TYPE] == self.V_DIFF_MODIFIED:
+                    self.logger.debug('compare_against_reference: node1 is modified compared to node2')
                     modified_node1.append(node1.attrib[self.A_ID])
                 elif ndr[self.K_DIFF_TYPE] == self.V_DIFF_IDENTICAL:
+                    self.logger.debug('compare_against_reference: node1 is identical to node2')
                     pass
                 elif ndr[self.K_DIFF_TYPE] == self.V_DIFF_NOT_CHECKED:
+                    self.logger.debug('compare_against_reference: Could not conclude with current tests')
                     # This condition shouldn't be hit once a proper implementation of compare_node is done
                     pass
 
@@ -368,20 +381,30 @@ class FreeplaneSchema(object):
         node1 = None
         node2 = None
 
-        while len(list1) > 0:
+        while len(list2) > 0:
+            self.logger.debug('compare_against_reference: --- Start of list2 iteration ---')
+            self.logger.debug('compare_against_reference: length of list1:\t\t\t{0}'.format(len(list1)))
+            self.logger.debug('compare_against_reference: length of list2:\t\t\t{0}'.format(len(list2)))
+
             node2 = list2.pop()
             if node2.tag == self.T_NODE:
+                self.logger.debug('compare_against_reference: Element is a node, proceeding with iteration')
                 pass
             else:
+                self.logger.debug('compare_against_reference: Element is NOT a node... skipping iteration')
                 continue
+
             list2 = list2 + other.get_node_immediate_children(node2)
 
             if node2.attrib[other.A_ID] in treated_node1:
+                self.logger.debug(
+                    'compare_against_reference: node2 already treated in node1 iteration... skipping iteration')
                 continue
 
             node1 = self.get_node_by_id(node2.attrib[self.A_ID])
 
             if node1 is None:
+                self.logger.debug('compare_against_reference: node2 not present in this document -> deleted node')
                 # exists in 2 but not in 1 -> implies a deleted node
                 in_structure2_only.append(node2.attrib[other.A_ID])
                 ndr = self.create_node_diff_report_for_deleted(node2.attrib[other.A_ID])

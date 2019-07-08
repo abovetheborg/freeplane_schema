@@ -641,22 +641,6 @@ class FreeplaneSchema(object):
             # TODO put an exception here
             return None
 
-    # def compute_node_hash(self, seed_node, include_note=True):
-    #     all_hashes = dict()
-    #     id_set = set()
-    #     children_node = self.get_node_children(seed_node)
-    #     for elem in children_node:
-    #         if elem.tag == self.T_NODE:
-    #             rep = self.create_stable_hashable_node_representation(elem, include_note=include_note)
-    #             hashed_rep = self.create_hash_from_representation(rep)
-    #
-    #             all_hashes[elem.attrib[self.A_ID]] = (elem, hashed_rep)
-    #             id_set = set(all_hashes.keys())
-    #
-    #     return all_hashes, id_set
-
-
-
     def indent(self, elem, level=0):
         i = "\n" + level * "  "
         if len(elem):

@@ -110,3 +110,5 @@ tests/output/**
 tests/single_line_document.mm
 
 tests/log.txt
+tests/cov_html/*
+tests/cov_annotate/*

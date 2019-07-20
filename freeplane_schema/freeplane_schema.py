@@ -5,8 +5,8 @@ import time
 import json
 import hashlib
 
-from lxml.etree import Element, SubElement, ElementTree, parse, fromstring, tostring
-
+# from lxml.etree import Element, SubElement, ElementTree, parse, fromstring, tostring
+from lxml import etree as ET
 
 class FreeplaneSchema(object):
     """
@@ -38,7 +38,7 @@ class FreeplaneSchema(object):
 
         self.logger.debug('INIT: Mapstyle location:\t\t\t\t{0}'.format(os.path.join(os.getcwd(), self.mapstyle_file)))
 
-        self.xml_root_element = Element(self.T_MAP, version=self.V_MAP_VERSION)
+        self.xml_root_element = ET.Element(self.T_MAP, version=self.V_MAP_VERSION)
         self.root_node = self.create_basic_node(self.xml_root_element, self.xml_root_element)
         # TODO do not automaticall create a node with a gnenerated id upon initiatilzation of this class
 
@@ -114,12 +114,12 @@ class FreeplaneSchema(object):
         temp_xml_root = self.xml_root_element
 
         if add_map_styles:
-            hook_node = parse(self.mapstyle_file).getroot()
+            hook_node = ET.parse(self.mapstyle_file).getroot()
             self.root_node.append(hook_node)
 
         if pretty_print_it:
             self.indent(temp_xml_root, 0)
-        ElementTree(temp_xml_root).write(filename)
+        ET.ElementTree(temp_xml_root).write(filename)
 
     def read_document(self, filename):
         """
@@ -127,7 +127,7 @@ class FreeplaneSchema(object):
         :param filename:
         :return:
         """
-        self.temp_xml_root_element = parse(filename).getroot()
+        self.temp_xml_root_element = ET.parse(filename).getroot()
 
         is_a_true_freeplane_file = False
 
@@ -225,7 +225,7 @@ class FreeplaneSchema(object):
     def add_node_by_id(self, parent_node, node_id=None):
         self.create_basic_node(self.xml_root_element, parent_node, node_id)
 
-    def get_node_by_id(self, node_id) -> Element:
+    def get_node_by_id(self, node_id) -> ET.Element:
         """
 
         :param node_id: Unique identifier used to find the node.
@@ -257,16 +257,16 @@ class FreeplaneSchema(object):
             # Check if node already has a note
             richcontent_node = node.find(self.T_RICHCONTENT)
             if richcontent_node is None:
-                richcontent_node = SubElement(node, self.T_RICHCONTENT)
+                richcontent_node = ET.SubElement(node, self.T_RICHCONTENT)
                 richcontent_node.set(self.A_TYPE, self.V_TYPE_NOTE)
 
             # TODO Add case where a not already exist
 
             # Raw text is crashing freeplane.  Will try to wrap the note in an HTML document
 
-            local_html_doc = Element('html')
-            head = SubElement(local_html_doc, 'head')
-            body = SubElement(local_html_doc, 'body')
+            local_html_doc = ET.Element('html')
+            head = ET.SubElement(local_html_doc, 'head')
+            body = ET.SubElement(local_html_doc, 'body')
 
             # Remove rogue bracket < >
             note_text = note_text.replace('&', '&amp;')
@@ -275,7 +275,7 @@ class FreeplaneSchema(object):
 
             data = '<p>%s</p>' % note_text.replace('\n', '<br />')
 
-            p = fromstring(data)
+            p = ET.fromstring(data)
             body.append(p)
 
             richcontent_node.insert(1, local_html_doc)
@@ -291,7 +291,7 @@ class FreeplaneSchema(object):
 
                 if len(attributes) == 0:
                     # No attributes exists on the node. We need to create a new node
-                    new_attribute_node = SubElement(node, self.T_ATTRIBUTE)
+                    new_attribute_node = ET.SubElement(node, self.T_ATTRIBUTE)
                     new_attribute_node.set(self.A_NAME, attribute_name)
                 else:
                     # Check all attribute to see if one matches the "attribute_name"
@@ -302,7 +302,7 @@ class FreeplaneSchema(object):
 
                 if 'new_attribute_node' not in locals():
                     # Condition where there is already attributes, but none matches "attribute_name"
-                    new_attribute_node = SubElement(node, self.T_ATTRIBUTE)
+                    new_attribute_node = ET.SubElement(node, self.T_ATTRIBUTE)
                     new_attribute_node.set(self.A_NAME, attribute_name)
 
                 new_attribute_node.set(self.A_VALUE, attribute_value)
@@ -677,7 +677,7 @@ class FreeplaneSchema(object):
         if parent_node is None:
             raise self.FreeplaneExpectedParentNode
 
-        new_node = SubElement(parent_node, self.T_NODE)
+        new_node = ET.SubElement(parent_node, self.T_NODE)
         if node_id is None:
             new_node.set(self.A_ID, uuid.uuid4().hex)
         else:
@@ -706,7 +706,7 @@ class FreeplaneSchema(object):
     def get_node_immediate_children(root_node):
         return root_node.getchildren()
 
-    def node_contains_note(self, my_node: Element) -> bool:
+    def node_contains_note(self, my_node: ET.Element) -> bool:
         return my_node.find(self.T_RICHCONTENT) is not None
 
     def get_note_content_string(self, my_node) -> str:
@@ -715,7 +715,7 @@ class FreeplaneSchema(object):
     def get_note_content_bytes(self, my_node) -> bytes:
         if self.node_contains_note(my_node):
             note = my_node.find(self.T_RICHCONTENT)
-            return tostring(note)
+            return ET.tostring(note)
         else:
             # TODO put an exception here
             return None

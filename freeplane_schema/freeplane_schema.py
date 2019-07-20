@@ -42,9 +42,15 @@ class FreeplaneSchema(object):
         self.root_node = self.create_basic_node(self.xml_root_element, self.xml_root_element)
         # TODO do not automaticall create a node with a gnenerated id upon initiatilzation of this class
 
+        self.document_compare_report = list()
+
     @property
     def logger(self):
         return self._logger
+
+    @property
+    def compare_report_available(self):
+        return not (self.document_compare_report is None or len(self.document_compare_report) == 0)
 
     def _build_logger(self):
         logger = logging.getLogger(self.__module__)
@@ -318,6 +324,8 @@ class FreeplaneSchema(object):
         if not isinstance(other, self.__class__):
             raise self.FreeplaneObjectNotFreeplaneDocument
 
+        self._clear_compare_report()
+
         list1 = [self.get_node_by_id('root')]
         list2 = [other.get_node_by_id('root')]
         list_of_ndr = []
@@ -414,7 +422,13 @@ class FreeplaneSchema(object):
 
             list_of_ndr.append(ndr)
 
+        self.document_compare_report = list_of_ndr
         pass
+
+    def _clear_compare_report(self):
+        self.logger.debug(
+            '_clear_compare_report: Report contains {0} element(s)'.format(len(self.document_compare_report)))
+        self.document_compare_report = list()
 
     def initialize_diff_report_for_node_id(self, node_id):
         node_diff_report = {self.K_NODE_ID: node_id,

@@ -39,9 +39,18 @@ def test_freeplane_schema_detect_wrong_object(empty_freeplane_document, not_free
 
 
 def test_freeplane_schema_comparison_same_file(empty_freeplane_document, same_empty_freeplane_document):
+    assert not empty_freeplane_document.compare_report_available
     empty_freeplane_document.compare_against_reference_document(same_empty_freeplane_document)
+    assert empty_freeplane_document.compare_report_available
+    empty_freeplane_document._clear_compare_report()
+    assert not empty_freeplane_document.compare_report_available
 
 
 def test_freeplane_schema_full_featured_same_file(freeplane_document1, freeplane_document2):
+    assert not freeplane_document1.compare_report_available
     freeplane_document1.compare_against_reference_document(freeplane_document2, test_node_text=True)
+    assert freeplane_document1.compare_report_available
+    freeplane_document1._clear_compare_report()
+    assert not freeplane_document1.compare_report_available
+
     pass

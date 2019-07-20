@@ -3,6 +3,7 @@ import os
 from .context import FreeplaneSchema
 
 INPUT_FILE_NO_MODIFICATIONS = os.path.join("input", "test_input_no_modifications.mm")
+INPUT_FIKE_TEXT_MODIFICATIONS = os.path.join("input", "test_input_mod_text.mm")
 
 @pytest.fixture
 def empty_freeplane_document(logger_during_tests):
@@ -30,6 +31,13 @@ def freeplane_document1(logger_during_tests):
 def freeplane_document2(logger_during_tests):
     a = FreeplaneSchema(inherited_logger=logger_during_tests)
     a.read_document(INPUT_FILE_NO_MODIFICATIONS)
+    return a
+
+
+@pytest.fixture
+def freeplane_document_text_modified(logger_during_tests):
+    a = FreeplaneSchema(inherited_logger=logger_during_tests)
+    a.read_document(INPUT_FIKE_TEXT_MODIFICATIONS)
     return a
 
 
@@ -70,3 +78,11 @@ def test_freeplane_schema_full_featured_same_file(freeplane_document1, freeplane
 
     freeplane_document1._clear_compare_report()
     assert not freeplane_document1.compare_report_available
+
+
+def test_freeplane_schema_text_modified(freeplane_document1, freeplane_document_text_modified):
+    freeplane_document_text_modified.compare_against_reference_document(freeplane_document1, test_node_text=True)
+
+    list_of_modified_nodes = freeplane_document_text_modified.list_of_modified_nodes
+    assert len(list_of_modified_nodes) == 1
+    assert list_of_modified_nodes[0][freeplane_document_text_modified.K_NODE_ID] == 'ID_499898058'

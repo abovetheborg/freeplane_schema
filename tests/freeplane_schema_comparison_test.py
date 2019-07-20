@@ -38,6 +38,11 @@ def test_freeplane_schema_detect_wrong_object(empty_freeplane_document, not_free
         empty_freeplane_document.compare_against_reference_document(not_freeplane_schema_object)
 
 
+def test_freeplane_schema_ask_for_report_results_without_report_being_available(freeplane_document1):
+    with pytest.raises(freeplane_document1.FreeplaneCompareReportNotAvailable):
+        freeplane_document1.list_of_identical_nodes
+
+
 def test_freeplane_schema_comparison_same_file(empty_freeplane_document, same_empty_freeplane_document):
     assert not empty_freeplane_document.compare_report_available
     empty_freeplane_document.compare_against_reference_document(same_empty_freeplane_document)
@@ -50,7 +55,18 @@ def test_freeplane_schema_full_featured_same_file(freeplane_document1, freeplane
     assert not freeplane_document1.compare_report_available
     freeplane_document1.compare_against_reference_document(freeplane_document2, test_node_text=True)
     assert freeplane_document1.compare_report_available
+
+    list_of_identical_nodes = freeplane_document1.list_of_identical_nodes
+    assert len(list_of_identical_nodes) == 49
+
+    list_of_modified_nodes = freeplane_document1.list_of_modified_nodes
+    assert len(list_of_modified_nodes) == 0
+
+    list_of_deleted_nodes = freeplane_document1.list_of_deleted_nodes
+    assert len(list_of_deleted_nodes) == 0
+
+    list_of_unchecked_nodes = freeplane_document1.list_of_not_checked_nodes
+    assert len(list_of_unchecked_nodes) == 24
+
     freeplane_document1._clear_compare_report()
     assert not freeplane_document1.compare_report_available
-
-    pass

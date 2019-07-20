@@ -52,6 +52,50 @@ class FreeplaneSchema(object):
     def compare_report_available(self):
         return not (self.document_compare_report is None or len(self.document_compare_report) == 0)
 
+    @property
+    def list_of_identical_nodes(self):
+        identical_nodes = self._list_of_node_per_diff_status(self.V_DIFF_IDENTICAL)
+        return identical_nodes
+
+    @property
+    def list_of_modified_nodes(self):
+        modified_nodes = self._list_of_node_per_diff_status(self.V_DIFF_MODIFIED)
+        return modified_nodes
+
+    @property
+    def list_of_deleted_nodes(self):
+        deleted_nodes = self._list_of_node_per_diff_status(self.V_DIFF_DELETED)
+        return deleted_nodes
+
+    @property
+    def list_of_not_checked_nodes(self):
+        unchecked_nodes = self._list_of_node_per_diff_status(self.V_DIFF_NOT_CHECKED)
+        return unchecked_nodes
+
+    def _list_of_node_per_diff_status(self, status):
+        if status in self.V_VALID_DIFF_STATUS:
+            self.logger.debug('_list_of_node_per_diff_status: Extracting for {0}'.format(status))
+            if self.compare_report_available:
+                self.logger.debug('_list_of_node_per_diff_status: Compare report exists and parsing it')
+                list_of_nodes = list()
+                for ndr in self.document_compare_report:
+                    self.logger.debug(
+                        '_list_of_node_per_diff_status: Parsing report for node_id: {0}'.format(ndr[self.K_NODE_ID]))
+                    if ndr[self.K_DIFF_TYPE] == status:
+                        self.logger.debug(
+                            '_list_of_node_per_diff_status: {0} is {1}'.format(ndr[self.K_NODE_ID], status))
+                        list_of_nodes.append(ndr)
+                    else:
+                        self.logger.debug(
+                            'list_of_identical_node: node_id: {0} is NOT {1}'.format(ndr[self.K_NODE_ID], status))
+
+                return list_of_nodes
+
+            else:
+                raise self.FreeplaneCompareReportNotAvailable
+        else:
+            raise self.FreeplaneDiffStatusNotValid
+
     def _build_logger(self):
         logger = logging.getLogger(self.__module__)
         logger.addHandler(logging.NullHandler())
@@ -554,6 +598,16 @@ class FreeplaneSchema(object):
         The whole code works on the assumption that ID are unique
         """
 
+    class FreeplaneCompareReportNotAvailable(FreeplaneError):
+        """
+        Will be raised when a request for compare report element is done without a compare report available
+        """
+
+    class FreeplaneDiffStatusNotValid(FreeplaneError):
+        """
+        Will be raised when attemptig to use a invalid diff status
+        """
+
     # Tag Constants
     T_MAP = "map"
     T_NODE = "node"
@@ -603,6 +657,8 @@ class FreeplaneSchema(object):
     V_DIFF_MODIFIED = 'modified'
     V_DIFF_DELETED = 'deleted'
     V_DIFF_IDENTICAL = 'identical'
+
+    V_VALID_DIFF_STATUS = [V_DIFF_NOT_CHECKED, V_DIFF_NEW, V_DIFF_MODIFIED, V_DIFF_DELETED, V_DIFF_IDENTICAL]
 
     V_DIFF_TEST_NOT_ATTEMPTED = 'NOT ATTEMPTED'
     V_DIFF_TEST_ATTEMPTED_CONDITIONS_NOT_MET = 'ATTEMPTED BUT CONDITIONS NOT MET'

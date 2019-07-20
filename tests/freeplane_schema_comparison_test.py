@@ -3,7 +3,8 @@ import os
 from .context import FreeplaneSchema
 
 INPUT_FILE_NO_MODIFICATIONS = os.path.join("input", "test_input_no_modifications.mm")
-INPUT_FIKE_TEXT_MODIFICATIONS = os.path.join("input", "test_input_mod_text.mm")
+INPUT_FILE_TEXT_MODIFICATIONS = os.path.join("input", "test_input_mod_text.mm")
+INPUT_FILE_DELETED_NODE = os.path.join("input", "test_input_deleted_node.mm")
 
 @pytest.fixture
 def empty_freeplane_document(logger_during_tests):
@@ -37,7 +38,14 @@ def freeplane_document2(logger_during_tests):
 @pytest.fixture
 def freeplane_document_text_modified(logger_during_tests):
     a = FreeplaneSchema(inherited_logger=logger_during_tests)
-    a.read_document(INPUT_FIKE_TEXT_MODIFICATIONS)
+    a.read_document(INPUT_FILE_TEXT_MODIFICATIONS)
+    return a
+
+
+@pytest.fixture
+def freeplane_document_deleted_node(logger_during_tests):
+    a = FreeplaneSchema(inherited_logger=logger_during_tests)
+    a.read_document(INPUT_FILE_DELETED_NODE)
     return a
 
 
@@ -48,7 +56,7 @@ def test_freeplane_schema_detect_wrong_object(empty_freeplane_document, not_free
 
 def test_freeplane_schema_ask_for_report_results_without_report_being_available(freeplane_document1):
     with pytest.raises(freeplane_document1.FreeplaneCompareReportNotAvailable):
-        freeplane_document1.list_of_identical_nodes
+        a = freeplane_document1.list_of_identical_nodes
 
 
 def test_freeplane_schema_comparison_same_file(empty_freeplane_document, same_empty_freeplane_document):
@@ -86,3 +94,11 @@ def test_freeplane_schema_text_modified(freeplane_document1, freeplane_document_
     list_of_modified_nodes = freeplane_document_text_modified.list_of_modified_nodes
     assert len(list_of_modified_nodes) == 1
     assert list_of_modified_nodes[0][freeplane_document_text_modified.K_NODE_ID] == 'ID_499898058'
+
+
+def test_freeplane_schema_deleted_node(freeplane_document1, freeplane_document_deleted_node):
+    freeplane_document_deleted_node.compare_against_reference_document(freeplane_document1)
+
+    list_of_deleted_nodes = freeplane_document_deleted_node.list_of_deleted_nodes
+    assert len(list_of_deleted_nodes) == 1
+    assert list_of_deleted_nodes[0][freeplane_document_deleted_node.K_NODE_ID] == 'ID_1829616131'

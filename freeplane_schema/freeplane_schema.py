@@ -706,20 +706,6 @@ class FreeplaneSchema(object):
     def get_node_immediate_children(root_node):
         return root_node.getchildren()
 
-    def create_stable_hashable_node_representation(self, my_node: Element, include_note=False) -> str:
-        d = my_node.attrib
-        if include_note:
-            if self.node_contains_note(my_node):
-                d['zzNote'] = self.get_note_content_string(my_node)
-
-        return json.dumps(d, sort_keys=True, ensure_ascii=True)
-
-    @staticmethod
-    def create_hash_from_representation(rep: str) -> str:
-        m = hashlib.sha1()
-        m.update(rep.encode())
-        return m.hexdigest()
-
     def node_contains_note(self, my_node: Element) -> bool:
         return my_node.find(self.T_RICHCONTENT) is not None
 

@@ -2,7 +2,6 @@ import pytest
 import os
 import filecmp
 from lxml import etree as ET
-from lxml.html import etree as ETH
 from .context import FreeplaneSchema
 
 INPUT_TEST_HTML_CONTENT = os.path.join("input", "test_html_doc_for_freeplane.html")

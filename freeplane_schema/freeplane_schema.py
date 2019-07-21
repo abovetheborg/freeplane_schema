@@ -5,8 +5,9 @@ import time
 import json
 import hashlib
 
-# from lxml.etree import Element, SubElement, ElementTree, parse, fromstring, tostring
+
 from lxml import etree as ET
+from lxml.html import etree as ETH
 
 class FreeplaneSchema(object):
     """
@@ -241,7 +242,29 @@ class FreeplaneSchema(object):
         else:
             raise self.FreeplaneIDNotUniqueError
 
-    def add_node_note_by_id(self, node_id, note_text):
+    def get_node_note_by_id(self, node_id=None):
+        node = self.get_node_by_id(node_id)
+
+        if node is None:
+            raise self.FreeplaneNodeNotExisting
+        else:
+            richcontent_node = node.find(self.T_RICHCONTENT)
+            if richcontent_node is None:
+                a = b''
+            else:
+                if self.A_TYPE in richcontent_node.attrib:
+                    if richcontent_node.attrib[self.A_TYPE] == self.V_TYPE_NOTE:
+                        # we have a note !
+                        note_elements = richcontent_node.find('html')
+                        a = ETH.tostring(note_elements)
+                    else:
+                        a = b''
+                else:
+                    raise self.FreeplaneRichContentTagNotProperlyDefined
+
+        return a.decode('ascii')
+
+    def set_node_note_by_id(self, node_id, note_text):
         """
 
         :param node_id:
@@ -255,28 +278,31 @@ class FreeplaneSchema(object):
             raise self.FreeplaneNodeNotExisting
         else:
             # Check if node already has a note
-            richcontent_node = node.find(self.T_RICHCONTENT)
-            if richcontent_node is None:
+            # TODO FIX THIS
+            # richcontent_node = node.find(self.T_RICHCONTENT)
+            if self.get_node_note_by_id(node_id) == '':
                 richcontent_node = ET.SubElement(node, self.T_RICHCONTENT)
                 richcontent_node.set(self.A_TYPE, self.V_TYPE_NOTE)
 
-            # TODO Add case where a not already exist
+            if self._string_is_valid_html(note_text):
+                local_html_doc = ETH.fromstring(note_text)
+            else:
 
-            # Raw text is crashing freeplane.  Will try to wrap the note in an HTML document
+                # Raw text is crashing freeplane.  Will try to wrap the note in an HTML document
 
-            local_html_doc = ET.Element('html')
-            head = ET.SubElement(local_html_doc, 'head')
-            body = ET.SubElement(local_html_doc, 'body')
+                local_html_doc = ET.Element('html')
+                head = ET.SubElement(local_html_doc, 'head')
+                body = ET.SubElement(local_html_doc, 'body')
 
-            # Remove rogue bracket < >
-            note_text = note_text.replace('&', '&amp;')
-            note_text = note_text.replace('<', '&lt;')
-            note_text = note_text.replace('>', '&gt;')
+                # Sanitize: Remove rogue bracket < >
+                note_text = note_text.replace('&', '&amp;')
+                note_text = note_text.replace('<', '&lt;')
+                note_text = note_text.replace('>', '&gt;')
 
-            data = '<p>%s</p>' % note_text.replace('\n', '<br />')
+                data = '<p>%s</p>' % note_text.replace('\n', '<br />')
 
-            p = ET.fromstring(data)
-            body.append(p)
+                p = ET.fromstring(data)
+                body.append(p)
 
             richcontent_node.insert(1, local_html_doc)
 
@@ -608,6 +634,11 @@ class FreeplaneSchema(object):
         Will be raised when attemptig to use a invalid diff status
         """
 
+    class FreeplaneRichContentTagNotProperlyDefined(FreeplaneError):
+        """
+        Will be raised when the richcontent tag doesn't havbe a TYPE attribute set
+        """
+
     # Tag Constants
     T_MAP = "map"
     T_NODE = "node"
@@ -709,16 +740,16 @@ class FreeplaneSchema(object):
     def node_contains_note(self, my_node: ET.Element) -> bool:
         return my_node.find(self.T_RICHCONTENT) is not None
 
-    def get_note_content_string(self, my_node) -> str:
-        return self.get_note_content_bytes(my_node).decode()
-
-    def get_note_content_bytes(self, my_node) -> bytes:
-        if self.node_contains_note(my_node):
-            note = my_node.find(self.T_RICHCONTENT)
-            return ET.tostring(note)
-        else:
-            # TODO put an exception here
-            return None
+    # def get_note_content_string(self, my_node) -> str:
+    #     return self.get_note_content_bytes(my_node).decode()
+    # 
+    # def get_note_content_bytes(self, my_node) -> bytes:
+    #     if self.node_contains_note(my_node):
+    #         note = my_node.find(self.T_RICHCONTENT)
+    #         return ET.tostring(note)
+    #     else:
+    #         # TODO put an exception here
+    #         return None
 
     def indent(self, elem, level=0):
         i = "\n" + level * "  "
@@ -734,3 +765,12 @@ class FreeplaneSchema(object):
         else:
             if level and (not elem.tail or not elem.tail.strip()):
                 elem.tail = i
+
+    def _string_is_valid_html(self, string):
+        try:
+            a = ETH.fromstring(string).find('.//*') is not None
+            self.logger.debug('_string_is_valid_html: The string is recognized as HTML')
+        except ET.XMLSyntaxError as e:
+            self.logger.exception('_string_is_valid_html: The string is NOT recognized as HTML')
+            a = False
+        return a

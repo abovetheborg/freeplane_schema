@@ -529,32 +529,44 @@ class FreeplaneSchema(object):
         if node1.attrib[self.A_ID] != node2.attrib[self.A_ID]:
             raise self.FreeplaneCannotCompareNodeWithDifferentID
 
+        test_excerpt = dict()
         # CONSTANTS
         TEST_NAME_NODE_TEXT = 'node_text'
         TEST_NAME_NODE_NOTE = 'node_note'
 
+        self.logger.debug('compare_node: Initializing node diff report')
         node_diff_report = self.initialize_diff_report_for_node_id(node_id=node1.attrib[self.A_ID])
 
         is_identical = None
 
         if test_node_text:
+            self.logger.debug('compare_node: --- Testing for text difference ---')
             # Condition to run test:
             #   - At least one node has the TEXT attribute.  If one doesn't, they are deemed different
             if self.A_TEXT in node1.attrib and self.A_TEXT in node2.attrib:
+                self.logger.debug('compare_node: Both node have TEXT attribute')
                 if is_identical is None:
+                    self.logger.debug('compare_node: is_identical was None')
                     is_identical = True
                 is_identical = is_identical & self.diff_node_text(node1, node2)
-                test_excerpt = {TEST_NAME_NODE_TEXT: self.V_DIFF_TEST_EXECUTED}
+                self.logger.debug('compare_node: is_identical is now: {0}'.format(is_identical))
+                test_excerpt[TEST_NAME_NODE_TEXT] = self.V_DIFF_TEST_EXECUTED
+                self.logger.debug('compare_node: test_excerpt is now: {0}'.format(test_excerpt))
             elif not (self.A_TEXT in node1.attrib and self.A_TEXT in node2.attrib):
                 # Test cannot execute
-                test_excerpt = {TEST_NAME_NODE_TEXT: self.V_DIFF_TEST_ATTEMPTED_CONDITIONS_NOT_MET}
+                test_excerpt[TEST_NAME_NODE_TEXT] = self.V_DIFF_TEST_ATTEMPTED_CONDITIONS_NOT_MET
+                self.logger.debug('compare_node: test_excerpt is now: {0}'.format(test_excerpt))
             else:
                 is_identical = False
-                test_excerpt = {TEST_NAME_NODE_TEXT: self.V_DIFF_TEST_EXECUTED}
+                test_excerpt[TEST_NAME_NODE_TEXT] = self.V_DIFF_TEST_EXECUTED
+                self.logger.debug('compare_node: test_excerpt is now: {0}'.format(test_excerpt))
         else:
-            test_excerpt = {TEST_NAME_NODE_TEXT: self.V_DIFF_TEST_NOT_ATTEMPTED}
+            self.logger.debug('compare_node: --- NOT Testing for text difference ---')
+            test_excerpt[TEST_NAME_NODE_TEXT] = self.V_DIFF_TEST_NOT_ATTEMPTED
+            self.logger.debug('compare_node: test_excerpt is now: {0}'.format(test_excerpt))
 
         if test_node_note:
+            self.logger.debug('compare_node: --- Testing for note difference ---')
             # Condition to run test:
             #   - At least one node has the 'richcontent' tag with a TYPE=NOTE attribute.
             #   If one doesn't, they are deemed different
@@ -564,18 +576,26 @@ class FreeplaneSchema(object):
             richcontent_node2 = node2.find(xpathstring)
 
             if richcontent_node1 is not None and richcontent_node2 is not None:
+                self.logger.debug('compare_node: Both node have a note')
                 if is_identical is None:
+                    self.logger.debug('compare_node: is_identical was None')
                     is_identical = True
                 is_identical = is_identical & self.diff_node_note(richcontent_node1, richcontent_node2)
-                test_excerpt = {TEST_NAME_NODE_NOTE: self.V_DIFF_TEST_EXECUTED}
+                self.logger.debug('compare_node: is_identical is now: {0}'.format(is_identical))
+                test_excerpt[TEST_NAME_NODE_NOTE] = self.V_DIFF_TEST_EXECUTED
+                self.logger.debug('compare_node: test_excerpt is now: {0}'.format(test_excerpt))
             elif richcontent_node1 is None and richcontent_node2 is None:
                 # Test cannot execute
-                test_excerpt = {TEST_NAME_NODE_NOTE: self.V_DIFF_TEST_ATTEMPTED_CONDITIONS_NOT_MET}
+                test_excerpt[TEST_NAME_NODE_NOTE] = self.V_DIFF_TEST_ATTEMPTED_CONDITIONS_NOT_MET
+                self.logger.debug('compare_node: test_excerpt is now: {0}'.format(test_excerpt))
             else:
                 is_identical = False
-                test_excerpt = {TEST_NAME_NODE_NOTE: self.V_DIFF_TEST_EXECUTED}
+                test_excerpt[TEST_NAME_NODE_NOTE] = self.V_DIFF_TEST_EXECUTED
+                self.logger.debug('compare_node: test_excerpt is now: {0}'.format(test_excerpt))
         else:
-            test_excerpt = {TEST_NAME_NODE_NOTE: self.V_DIFF_TEST_NOT_ATTEMPTED}
+            self.logger.debug('compare_node: --- NOT Testing for note difference ---')
+            test_excerpt[TEST_NAME_NODE_NOTE] = self.V_DIFF_TEST_NOT_ATTEMPTED
+            self.logger.debug('compare_node: test_excerpt is now: {0}'.format(test_excerpt))
 
         node_diff_report[self.K_CHECK_METHODS].append(test_excerpt)
 

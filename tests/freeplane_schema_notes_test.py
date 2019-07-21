@@ -71,12 +71,12 @@ def test_node_note_read_html_note(freeplane_document_with_html_note):
 
 def test_node_note_read_html_note_with_wrong_type_defined(freeplane_document_with_html_note_wrong_type):
     note_text = freeplane_document_with_html_note_wrong_type.get_node_note_by_id(node_id='root')
-    assert len(note_text) == 0
+    assert note_text is None
 
 
 def test_node_note_read_html_note_without_note(freeplane_document):
     note_text = freeplane_document.get_node_note_by_id(node_id='root')
-    assert len(note_text) == 0
+    assert note_text is None
 
 
 def test_node_note_read_html_note_no_type_defined(freeplane_document_with_html_note_no_type):

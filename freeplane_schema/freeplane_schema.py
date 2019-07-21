@@ -399,7 +399,7 @@ class FreeplaneSchema(object):
             else:
                 return self.V_POSITION_DEFAULT
 
-    def compare_against_reference_document(self, other, test_node_text=False):
+    def compare_against_reference_document(self, other, test_node_text=False, test_node_note=False):
         if not isinstance(other, self.__class__):
             raise self.FreeplaneObjectNotFreeplaneDocument
 
@@ -450,7 +450,7 @@ class FreeplaneSchema(object):
                 self.logger.debug(
                     'compare_against_reference: node1 present in reference document -> modified/identical')
                 # Exists in 1 and 2 -> Can either be a modified or not
-                ndr = self.compare_node(node1, node2, test_node_text=test_node_text)
+                ndr = self.compare_node(node1, node2, test_node_text=test_node_text, test_node_note=test_node_note)
 
                 if ndr[self.K_DIFF_TYPE] == self.V_DIFF_MODIFIED:
                     self.logger.debug('compare_against_reference: node1 is modified compared to node2')
@@ -525,12 +525,13 @@ class FreeplaneSchema(object):
         node_diff_report[self.K_DIFF_TYPE] = self.V_DIFF_DELETED
         return node_diff_report
 
-    def compare_node(self, node1, node2, test_node_text=False):
+    def compare_node(self, node1, node2, test_node_text=False, test_node_note=False):
         if node1.attrib[self.A_ID] != node2.attrib[self.A_ID]:
             raise self.FreeplaneCannotCompareNodeWithDifferentID
 
         # CONSTANTS
         TEST_NAME_NODE_TEXT = 'node_text'
+        TEST_NAME_NODE_NOTE = 'node_note'
 
         node_diff_report = self.initialize_diff_report_for_node_id(node_id=node1.attrib[self.A_ID])
 
@@ -553,6 +554,29 @@ class FreeplaneSchema(object):
         else:
             test_excerpt = {TEST_NAME_NODE_TEXT: self.V_DIFF_TEST_NOT_ATTEMPTED}
 
+        if test_node_note:
+            # Condition to run test:
+            #   - At least one node has the 'richcontent' tag with a TYPE=NOTE attribute.
+            #   If one doesn't, they are deemed different
+            # book[@location='US']
+            xpathstring = self.T_RICHCONTENT + '[@' + self.A_TYPE + '="' + self.V_TYPE_NOTE + '"]'
+            richcontent_node1 = node1.find(xpathstring)
+            richcontent_node2 = node2.find(xpathstring)
+
+            if richcontent_node1 is not None and richcontent_node2 is not None:
+                if is_identical is None:
+                    is_identical = True
+                is_identical = is_identical & self.diff_node_note(richcontent_node1, richcontent_node2)
+                test_excerpt = {TEST_NAME_NODE_NOTE: self.V_DIFF_TEST_EXECUTED}
+            elif richcontent_node1 is None and richcontent_node2 is None:
+                # Test cannot execute
+                test_excerpt = {TEST_NAME_NODE_NOTE: self.V_DIFF_TEST_ATTEMPTED_CONDITIONS_NOT_MET}
+            else:
+                is_identical = False
+                test_excerpt = {TEST_NAME_NODE_NOTE: self.V_DIFF_TEST_EXECUTED}
+        else:
+            test_excerpt = {TEST_NAME_NODE_NOTE: self.V_DIFF_TEST_NOT_ATTEMPTED}
+
         node_diff_report[self.K_CHECK_METHODS].append(test_excerpt)
 
         if is_identical is None:
@@ -566,6 +590,13 @@ class FreeplaneSchema(object):
 
     def diff_node_text(self, node1, node2):
         return node1.attrib[self.A_TEXT] == node2.attrib[self.A_TEXT]
+
+    def diff_node_note(self, richcontent_node1, richconente_node2):
+        text1 = ET.tostring(richcontent_node1)
+        text2 = ET.tostring(richconente_node2)
+        self.logger.debug('diff_node_note: node1 note is: {0}'.format(text1))
+        self.logger.debug('diff_node_note: node2 note is: {0}'.format(text2))
+        return text1 == text2
 
     class FreeplaneError(Exception):
         pass
